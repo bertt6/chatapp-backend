@@ -1,0 +1,49 @@
+version: '3.7'
+
+services:
+  couchbase:
+    image: couchbase:latest
+    ports:
+      - "8091-8094:8091-8094"
+      - "11210:11210"
+    environment:
+      COUCHBASE_ADMINISTRATOR_USERNAME: admin
+      COUCHBASE_ADMINISTRATOR_PASSWORD: password
+    volumes:
+      - couchbase_data:/opt/couchbase/var
+    networks:
+      - my_network
+
+  app:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - couchbase
+    environment:
+      COUCHBASE_URL: couchbase://couchbase
+      COUCHBASE_USERNAME: admin
+      COUCHBASE_PASSWORD: password
+    networks:
+      - my_network
+
+  web:
+    image: nginx:latest
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+      - ./front-test/index.html:/usr/share/nginx/html/index.html
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - my_network
+
+volumes:
+  couchbase_data:
+
+networks:
+  my_network:
+    driver: bridge
